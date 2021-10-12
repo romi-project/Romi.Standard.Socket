@@ -45,7 +45,7 @@ namespace Romi.Standard.Sockets.Net
                 _closed = true;
                 if (closeReason != null)
                     _closeReason = $"{closeReason} at {new StackTrace().GetFrame(callingStackFrame)}";
-                Reserve(new SocketEvent(this, SocketEventType.Close));
+                Reserve(SocketEventType.Close);
             }
         }
 
@@ -61,7 +61,12 @@ namespace Romi.Standard.Sockets.Net
 
         public virtual void OnOutOfBand() => throw new NotSupportedException();
 
-        public void Reserve(SocketEvent socketEvent)
+        public void Reserve(SocketEventType eventType)
+        {
+            _socketThread.Reserve(new SocketEvent(this, eventType));
+        }
+
+        internal void Reserve(SocketEvent socketEvent)
         {
             _socketThread.Reserve(socketEvent);
         }

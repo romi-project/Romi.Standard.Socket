@@ -9,15 +9,11 @@ namespace Romi.Standard.Sockets.Net
     public abstract class Connector : SocketPrincipal
     {
         private readonly ManualResetEventSlim _connectWaitHandle = new();
-        private readonly Socket _socket;
-        private readonly SocketThread _socketThread;
         private IPEndPoint _endPoint;
 
-        protected Connector(Socket socket, SocketThread socketThread)
-            : base(socket, socketThread)
+        protected Connector(AddressFamily addressFamily, SocketThread socketThread)
+            : base(new Socket(addressFamily, SocketType.Stream, ProtocolType.Tcp), socketThread)
         {
-            _socket = socket;
-            _socketThread = socketThread;
         }
 
         ~Connector()
@@ -32,7 +28,7 @@ namespace Romi.Standard.Sockets.Net
             return Task.Run(() =>
             {
                 _connectWaitHandle.Wait();
-                return IsClosed ? null : _socket;
+                return IsClosed ? null : Socket;
             });
         }
 
@@ -47,7 +43,7 @@ namespace Romi.Standard.Sockets.Net
         {
             try
             {
-                ConnectClient(_socket);
+                ConnectClient(Socket);
                 _connectWaitHandle.Set();
             }
             catch (Exception ex)
@@ -60,7 +56,7 @@ namespace Romi.Standard.Sockets.Net
         {
             try
             {
-                _socket.Close();
+                Socket.Close();
             }
             catch
             {
@@ -75,7 +71,7 @@ namespace Romi.Standard.Sockets.Net
         {
             try
             {
-                _socket.BeginConnect(_endPoint, EndConnect, null);
+                Socket.BeginConnect(_endPoint, EndConnect, null);
             }
             catch (ObjectDisposedException)
             {
@@ -91,8 +87,8 @@ namespace Romi.Standard.Sockets.Net
         {
             try
             {
-                _socket.EndConnect(ar);
-                Reserve(new SocketEvent(this, SocketEventType.Connect));
+                Socket.EndConnect(ar);
+                Reserve(SocketEventType.Connect);
             }
             catch (ObjectDisposedException)
             {

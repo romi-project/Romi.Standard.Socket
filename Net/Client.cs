@@ -28,6 +28,7 @@ namespace Romi.Standard.Sockets.Net
 
         public override void OnConnect()
         {
+            BeginReceive();
         }
 
         public override void OnClose()
@@ -66,7 +67,7 @@ namespace Romi.Standard.Sockets.Net
 
         protected void AddWritePackets(IEnumerable<ArraySegment<byte>> writePackets)
         {
-            if (!IsClosed)
+            if (IsClosed)
                 return;
             lock (_writeSyncRoot)
             {
@@ -76,7 +77,7 @@ namespace Romi.Standard.Sockets.Net
 
         protected void AddWritePacket(ArraySegment<byte> writePacket)
         {
-            if (!IsClosed)
+            if (IsClosed)
                 return;
             lock (_writeSyncRoot)
             {
@@ -111,7 +112,7 @@ namespace Romi.Standard.Sockets.Net
                 }
                 _socketBuffer.Read += read;
                 if (_socketBuffer.Remaining == 0)
-                    Reserve(new SocketEvent(this, SocketEventType.Read));
+                    Reserve(SocketEventType.Read);
             }
             catch (Exception ex)
             {
@@ -170,6 +171,7 @@ namespace Romi.Standard.Sockets.Net
             return error switch
             {
                 SocketError.IOPending => true,
+                SocketError.Success => true,
                 _ => false
             };
         }

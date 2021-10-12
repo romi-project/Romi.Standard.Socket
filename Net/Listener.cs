@@ -8,26 +8,22 @@ namespace Romi.Standard.Sockets.Net
     public abstract class Listener : SocketPrincipal
     {
         private readonly ConcurrentQueue<Socket> _acceptedSockets = new();
-        private readonly SocketThread _socketThread;
-        private readonly Socket _socket;
         private IPEndPoint _endPoint;
 
-        protected Listener(Socket socket, SocketThread socketThread)
-            : base (socket, socketThread)
+        protected Listener(AddressFamily addressFamily, SocketThread socketThread)
+            : base (new Socket(addressFamily, SocketType.Stream, ProtocolType.Tcp), socketThread)
         {
-            _socket = socket;
-            _socketThread = socketThread;
         }
 
         public void Bind(IPEndPoint endPoint)
         {
-            _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-            _socket.Bind(_endPoint = endPoint);
+            Socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+            Socket.Bind(_endPoint = endPoint);
         }
 
         public void Listen()
         {
-            _socket.Listen(100);
+            Socket.Listen(100);
             BeginAccept();
         }
 
@@ -41,7 +37,7 @@ namespace Romi.Standard.Sockets.Net
         {
             try
             {
-                _socket.Close();
+                Socket.Close();
             }
             catch
             {
@@ -55,7 +51,7 @@ namespace Romi.Standard.Sockets.Net
         {
             try
             {
-                _socket.BeginAccept(EndAccept, null);
+                Socket.BeginAccept(EndAccept, null);
             }
             catch (ObjectDisposedException)
             {
@@ -71,8 +67,8 @@ namespace Romi.Standard.Sockets.Net
         {
             try
             {
-                _acceptedSockets.Enqueue(_socket.EndAccept(ar));
-                Reserve(new SocketEvent(this, SocketEventType.Accept));
+                _acceptedSockets.Enqueue(Socket.EndAccept(ar));
+                Reserve(SocketEventType.Accept);
             }
             catch (ObjectDisposedException)
             {

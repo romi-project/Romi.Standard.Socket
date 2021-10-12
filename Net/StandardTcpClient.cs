@@ -22,7 +22,7 @@ namespace Romi.Standard.Sockets.Net
         public void SendRawPacket(byte[] rawPacket)
         {
             AddWritePacket(new ArraySegment<byte>(rawPacket));
-            Reserve(new SocketEvent(this, SocketEventType.Write));
+            Reserve(SocketEventType.Write);
         }
 
         protected sealed override void InitBuffer(SocketBuffer buffer)
