@@ -3,6 +3,7 @@
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
         <RootNamespace>Romi.Standard.Sockets</RootNamespace>
+        <LangVersion>default</LangVersion>
     </PropertyGroup>
 
 </Project>
