@@ -32,6 +32,15 @@ namespace Romi.Standard.Sockets.Net
 
         public override void OnClose()
         {
+            try
+            {
+                Socket.Shutdown(SocketShutdown.Both);
+                Socket.Close();
+            }
+            catch
+            {
+                // ignored
+            }
         }
 
         protected abstract void InitBuffer(SocketBuffer buffer);
@@ -57,6 +66,8 @@ namespace Romi.Standard.Sockets.Net
 
         protected void AddWritePackets(IEnumerable<ArraySegment<byte>> writePackets)
         {
+            if (!IsClosed)
+                return;
             lock (_writeSyncRoot)
             {
                 _writePacketList.AddRange(writePackets);
@@ -65,6 +76,8 @@ namespace Romi.Standard.Sockets.Net
 
         protected void AddWritePacket(ArraySegment<byte> writePacket)
         {
+            if (!IsClosed)
+                return;
             lock (_writeSyncRoot)
             {
                 _writePacketList.Add(writePacket);

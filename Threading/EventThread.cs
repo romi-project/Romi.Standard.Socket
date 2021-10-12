@@ -1,4 +1,3 @@
-using System;
 using System.Threading;
 
 namespace Romi.Standard.Sockets.Threading
