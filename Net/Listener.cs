@@ -29,11 +29,19 @@ namespace Romi.Standard.Sockets.Net
 
         public override void OnAccept()
         {
+        }
+
+        public override void OnClose()
+        {
+        }
+
+        internal override void Accepted()
+        {
             while (_acceptedSockets.TryDequeue(out var acceptedSocket))
                 AcceptClient(acceptedSocket);
         }
 
-        public override void OnClose()
+        internal override void Closed()
         {
             try
             {
@@ -55,11 +63,11 @@ namespace Romi.Standard.Sockets.Net
             }
             catch (ObjectDisposedException)
             {
-                Close(null);
+                Close(CloseReasonInfo.Empty);
             }
             catch (Exception ex)
             {
-                Close($"Exception {ex.Message}", 1);
+                Close(ex);
             }
         }
 
@@ -72,12 +80,12 @@ namespace Romi.Standard.Sockets.Net
             }
             catch (ObjectDisposedException)
             {
-                Close(null);
+                Close(CloseReasonInfo.Empty);
                 return;
             }
             catch (Exception ex)
             {
-                Close($"Exception {ex.Message}", 1);
+                Close(ex);
                 return;
             }
 

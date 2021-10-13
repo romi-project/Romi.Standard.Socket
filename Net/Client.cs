@@ -28,10 +28,26 @@ namespace Romi.Standard.Sockets.Net
 
         public override void OnConnect()
         {
-            BeginReceive();
+        }
+
+        public override void OnRead()
+        {
+        }
+
+        public override void OnWrite()
+        {
         }
 
         public override void OnClose()
+        {
+        }
+
+        internal override void Connected()
+        {
+            BeginReceive();
+        }
+
+        internal override void Closed()
         {
             try
             {
@@ -44,26 +60,29 @@ namespace Romi.Standard.Sockets.Net
             }
         }
 
-        protected abstract void InitBuffer(SocketBuffer buffer);
-        protected abstract void ReadBuffer(SocketBuffer buffer);
-
-        public sealed override void OnRead()
+        internal override void Read()
         {
             try
             {
-                ReadBuffer(_socketBuffer);
+                while (true)
+                {
+                    if (!ReadBuffer(_socketBuffer))
+                        break;
+                }
                 BeginReceive();
             }
             catch (Exception ex)
             {
-                Close($"Exception {ex.Message}", 1);
+                Close(ex);
             }
         }
 
-        public sealed override void OnWrite()
+        internal override void Written()
         {
             BeginSend();
         }
+
+        protected abstract bool ReadBuffer(SocketBuffer buffer);
 
         protected void AddWritePackets(IEnumerable<ArraySegment<byte>> writePackets)
         {
@@ -87,12 +106,11 @@ namespace Romi.Standard.Sockets.Net
 
         private void BeginReceive()
         {
-            InitBuffer(_socketBuffer);
-            var offset = _socketBuffer.Read;
-            var size = _socketBuffer.Remaining;
+            var offset = _socketBuffer.Offset;
+            var size = _socketBuffer.Buffer.Length - _socketBuffer.Offset;
             Socket.BeginReceive(_socketBuffer.Buffer, offset, size, SocketFlags.None, out var error, EndReceive, null);
             if (!IsContinuableSocketError(error))
-                Close($"SocketError {error}", 1);
+                Close(new CloseReasonInfo(true, "SocketError", error.ToString()));
         }
 
         private void EndReceive(IAsyncResult ar)
@@ -102,21 +120,20 @@ namespace Romi.Standard.Sockets.Net
                 var read = Socket.EndReceive(ar, out var error);
                 if (read == 0)
                 {
-                    Close($"Shutdown gracefully", 1);
+                    Close(new CloseReasonInfo(false, "Shutdown gracefully"));
                     return;
                 }
                 if (!IsContinuableSocketError(error))
                 {
-                    Close($"SocketError {error}", 1);
+                    Close(new CloseReasonInfo(true, "SocketError", error.ToString()));
                     return;
                 }
-                _socketBuffer.Read += read;
-                if (_socketBuffer.Remaining == 0)
-                    Reserve(SocketEventType.Read);
+                _socketBuffer.Offset += read;
+                Reserve(SocketEventType.Read);
             }
             catch (Exception ex)
             {
-                Close($"Exception {ex.Message}", 1);
+                Close(ex);
             }
         }
 
@@ -128,11 +145,11 @@ namespace Romi.Standard.Sockets.Net
                     return;
                 Socket.BeginSend(writePacketList, SocketFlags.None, out var error, EndSend, null);
                 if (!IsContinuableSocketError(error))
-                    Close($"SocketError {error}", 1);
+                    Close(new CloseReasonInfo(true, "SocketError", error.ToString()));
             }
             catch (Exception ex)
             {
-                Close($"Exception {ex.Message}", 1);
+                Close(ex);
             }
         }
 
@@ -158,11 +175,11 @@ namespace Romi.Standard.Sockets.Net
             {
                 Socket.EndSend(ar, out var error);
                 if (!IsContinuableSocketError(error))
-                    Close($"SocketError {error}", 1);
+                    Close(new CloseReasonInfo(true, "SocketError", error.ToString()));
             }
             catch (Exception ex)
             {
-                Close($"Exception {ex.Message}", 1);
+                Close(ex);
             }
         }
 

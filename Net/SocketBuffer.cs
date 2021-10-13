@@ -5,35 +5,36 @@ namespace Romi.Standard.Sockets.Net
 {
     public class SocketBuffer
     {
+        private const int DefaultBufferSize = 256 * 1024;
         public byte[] Buffer;
-        public int Size;
-        public int Read;
-        public int Remaining => Size - Read;
+        public int Offset;
 
-        public void InitBuffer(int expected)
+        public SocketBuffer()
         {
-            Read = 0;
-            Size = expected;
+            Offset = 0;
+            EnsureSize(DefaultBufferSize);
+        }
+
+        public void EnsureSize(int expected)
+        {
             if (Buffer == null)
                 Buffer = new byte[expected];
             else if (Buffer.Length < expected)
                 Array.Resize(ref Buffer, expected);
         }
 
-        public byte[] Poll(int size)
+        public bool TryPoll(int size, out byte[] ret)
         {
-            size = Math.Min(size, Size);
-            var ret = Buffer.Take(size).ToArray();
-            var remain = Size - size;
-            if (remain > 0)
+            if (Offset < size) // lack
             {
-                Array.Copy(Buffer, size, Buffer, 0, remain);
-                Array.Resize(ref Buffer, remain);
+                ret = null;
+                return false;
             }
-            else
-                Buffer = null;
-            Size -= size;
-            return ret;
+            ret = Buffer.Take(size).ToArray();
+            if (Offset > size)
+                Array.Copy(Buffer, size, Buffer, 0, Offset - size);
+            Offset -= size;
+            return true;
         }
     }
 }

@@ -74,17 +74,35 @@ namespace Romi.Standard.Sockets.Net
             var socketPrincipal = socketEvent.SocketPrincipal;
             var reservedEvent = socketEvent.ReservedEvent;
             if (reservedEvent.HasFlag(SocketEventType.Close))
+            {
+                socketPrincipal.Closed();
                 socketPrincipal.OnClose();
+            }
             if (reservedEvent.HasFlag(SocketEventType.OutOfBand))
+            {
+                socketPrincipal.OutOfBand();
                 socketPrincipal.OnOutOfBand();
+            }
             if (reservedEvent.HasFlag(SocketEventType.Accept))
+            {
+                socketPrincipal.Accepted();
                 socketPrincipal.OnAccept();
+            }
             if (reservedEvent.HasFlag(SocketEventType.Connect))
+            {
+                socketPrincipal.Connected();
                 socketPrincipal.OnConnect();
+            }
             if (reservedEvent.HasFlag(SocketEventType.Read))
+            {
+                socketPrincipal.Read();
                 socketPrincipal.OnRead();
+            }
             if (reservedEvent.HasFlag(SocketEventType.Write))
+            {
+                socketPrincipal.Written();
                 socketPrincipal.OnWrite();
+            }
         }
 
         private bool ReadyNextEvent()

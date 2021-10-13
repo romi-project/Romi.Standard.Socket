@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Net.Sockets;
 
 namespace Romi.Standard.Sockets.Net
@@ -10,7 +9,7 @@ namespace Romi.Standard.Sockets.Net
         private readonly SocketThread _socketThread;
         private readonly object _syncRoot = new();
         private bool _closed;
-        private string _closeReason;
+        private CloseReasonInfo _closeReason;
 
         protected SocketPrincipal(Socket socket, SocketThread socketThread)
         {
@@ -27,7 +26,7 @@ namespace Romi.Standard.Sockets.Net
             }
         }
 
-        public string CloseReason
+        public CloseReasonInfo CloseReason
         {
             get
             {
@@ -36,15 +35,17 @@ namespace Romi.Standard.Sockets.Net
             }
         }
 
-        public void Close(string closeReason = "Calling Close", int callingStackFrame = 1)
+        public void Close(Exception ex, int callingStackFrame = 0)
+            => Close(new CloseReasonInfo(ex, callingStackFrame));
+
+        public void Close(CloseReasonInfo closeReason = null)
         {
             lock (_syncRoot)
             {
                 if (_closed)
                     return;
                 _closed = true;
-                if (closeReason != null)
-                    _closeReason = $"{closeReason} at {new StackTrace().GetFrame(callingStackFrame)}";
+                _closeReason = closeReason ?? CloseReasonInfo.Default;
                 Reserve(SocketEventType.Close);
             }
         }
@@ -60,6 +61,13 @@ namespace Romi.Standard.Sockets.Net
         public virtual void OnClose() => throw new NotSupportedException();
 
         public virtual void OnOutOfBand() => throw new NotSupportedException();
+
+        internal virtual void Connected() {}
+        internal virtual void Accepted() {}
+        internal virtual void Read() {}
+        internal virtual void Written() {}
+        internal virtual void Closed() {}
+        internal virtual void OutOfBand() {}
 
         public void Reserve(SocketEventType eventType)
         {

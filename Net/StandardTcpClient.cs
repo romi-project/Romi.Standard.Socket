@@ -25,45 +25,42 @@ namespace Romi.Standard.Sockets.Net
             Reserve(SocketEventType.Write);
         }
 
-        protected sealed override void InitBuffer(SocketBuffer buffer)
-        {
-            buffer.InitBuffer(_state switch
-            {
-                StandardTcpClientState.Header => HeaderLength,
-                StandardTcpClientState.Content => _contentLength,
-                _ => throw new NotImplementedException($"Unknown state {_state}")
-            });
-        }
-
-        protected sealed override void ReadBuffer(SocketBuffer buffer)
+        protected sealed override bool ReadBuffer(SocketBuffer buffer)
         {
             switch (_state)
             {
                 case StandardTcpClientState.Header:
                 {
-                    var header = Convert.ToUInt32(buffer.Poll(HeaderLength));
+                    if (!buffer.TryPoll(HeaderLength, out var bytes))
+                        return false;
+                    var header = BitConverter.ToUInt32(bytes, 0);
                     if (!IsValidHeader(header))
                         throw new InvalidDataException($"Invalid header.");
                     _contentLength = GetContentLength(header);
                     _state = StandardTcpClientState.Content;
+                    buffer.EnsureSize(_contentLength);
                     break;
                 }
                 case StandardTcpClientState.Content:
                 {
                     try
                     {
-                        OnPacket(buffer.Poll(buffer.Size));
+                        if (!buffer.TryPoll(_contentLength, out var bytes))
+                            return false;
+                        OnPacket(bytes);
                         _state = StandardTcpClientState.Header;
+                        buffer.EnsureSize(HeaderLength);
                     }
                     catch (Exception ex)
                     {
-                        Close($"OnPacketError {ex.Message}");
+                        Close(ex);
                     }
                     break;
                 }
                 default:
                     throw new NotImplementedException($"Unknown state {_state}");
             }
+            return true;
         }
 
         protected virtual void OnPacket(byte[] data)

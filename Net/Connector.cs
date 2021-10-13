@@ -41,6 +41,14 @@ namespace Romi.Standard.Sockets.Net
 
         public override void OnConnect()
         {
+        }
+
+        public override void OnClose()
+        {
+        }
+
+        internal override void Connected()
+        {
             try
             {
                 ConnectClient(Socket);
@@ -48,11 +56,11 @@ namespace Romi.Standard.Sockets.Net
             }
             catch (Exception ex)
             {
-                Close($"Exception {ex.Message}", 2);
+                Close(ex, 1);
             }
         }
 
-        public override void OnClose()
+        internal override void Closed()
         {
             try
             {
@@ -75,11 +83,11 @@ namespace Romi.Standard.Sockets.Net
             }
             catch (ObjectDisposedException)
             {
-                Close(null);
+                Close(CloseReasonInfo.Empty);
             }
             catch (Exception ex)
             {
-                Close($"Exception {ex.Message}", 1);
+                Close(ex);
             }
         }
 
@@ -92,11 +100,11 @@ namespace Romi.Standard.Sockets.Net
             }
             catch (ObjectDisposedException)
             {
-                Close(null);
+                Close(CloseReasonInfo.Empty);
             }
             catch (Exception ex)
             {
-                Close($"Exception {ex.Message}", 1);
+                Close(ex);
             }
         }
     }
