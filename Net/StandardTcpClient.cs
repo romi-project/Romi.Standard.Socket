@@ -8,7 +8,7 @@ namespace Romi.Standard.Sockets.Net
 {
     public abstract class StandardTcpClient : Client
     {
-        private const int HeaderLength = 4;
+        public const int HeaderLength = 4;
 
         private StandardTcpClientState _state;
         private int _contentLength;
